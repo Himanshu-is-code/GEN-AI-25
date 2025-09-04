@@ -70,7 +70,7 @@ const detectCrisisIntent = (userMessage: string): boolean => {
 
 // Message type
 interface Message {
-  id?: string; // For journal entries
+  id: string;
   sender: 'user' | 'ai';
   text: string;
   imagePreview?: string;
@@ -111,6 +111,14 @@ const BookTextIcon = () => (
 );
 
 const AlertTriangleIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+
+const SpeakerIcon = ({ isSpeaking }: { isSpeaking: boolean }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" className={isSpeaking ? 'opacity-100 animate-pulse' : 'opacity-50'} style={{ animationDelay: '0.2s' }} />
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" className={isSpeaking ? 'opacity-100 animate-pulse' : 'opacity-50'} />
+    </svg>
+);
 
 
 const CrisisResponseCard: React.FC<{ response: string; resource: CrisisResource; friendMessageDraft: string; }> = ({ response, resource, friendMessageDraft }) => {
@@ -204,6 +212,7 @@ const ChatPage: React.FC<ChatProps> = ({ theme, onNavigateHome, onNavigateToJour
   const [isLoading, setIsLoading] = useState(false);
   const [chat, setChat] = useState<Chat | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
 
   // Automatically scroll to the latest message
   useEffect(() => {
@@ -212,6 +221,55 @@ const ChatPage: React.FC<ChatProps> = ({ theme, onNavigateHome, onNavigateToJour
     }
   }, [messages, isLoading]);
 
+  useEffect(() => {
+    const cancelSpeech = () => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+    };
+    window.addEventListener('beforeunload', cancelSpeech);
+    // Cleanup on unmount
+    return () => {
+        cancelSpeech();
+        window.removeEventListener('beforeunload', cancelSpeech);
+    }
+  }, []);
+
+  const handleSpeak = useCallback((messageToSpeak: Message) => {
+    if (!('speechSynthesis' in window)) {
+        console.warn("Text-to-speech not supported in this browser.");
+        return;
+    }
+
+    if (speakingMessageId === messageToSpeak.id) {
+        window.speechSynthesis.cancel();
+        return;
+    }
+
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+
+    const utterance = new SpeechSynthesisUtterance(messageToSpeak.text);
+
+    utterance.onstart = () => {
+        setSpeakingMessageId(messageToSpeak.id);
+    };
+
+    const onSpeechEnd = () => {
+        setSpeakingMessageId(prevId => (prevId === messageToSpeak.id ? null : prevId));
+    };
+
+    utterance.onend = onSpeechEnd;
+    utterance.onerror = (e) => {
+        console.error("Speech synthesis error", e);
+        onSpeechEnd();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }, [speakingMessageId]);
+
+
   const handleApiError = useCallback((error: any) => {
     console.error("Gemini API Error:", error);
     let errorMessage = "I'm sorry, something went wrong. Could you please try again?";
@@ -219,7 +277,7 @@ const ChatPage: React.FC<ChatProps> = ({ theme, onNavigateHome, onNavigateToJour
     if (error && typeof error.message === 'string' && (error.message.includes('quota') || error.message.includes('rate limit'))) {
       errorMessage = "It looks like I'm getting a lot of requests right now. Please wait a moment before sending another message.";
     }
-    setMessages(prev => [...prev.filter(m => m.sender !== 'ai' || !m.text.startsWith("I'm sorry")), { sender: 'ai', text: errorMessage }]);
+    setMessages(prev => [...prev.filter(m => m.sender !== 'ai' || !m.text.startsWith("I'm sorry")), { id: `ai-error-${Date.now()}`, sender: 'ai', text: errorMessage }]);
   }, []);
 
   // Initialize the Gemini Chat model
@@ -406,7 +464,7 @@ For every user input, follow this structured loop internally:
     if (isJournal) {
         if (!text.trim()) return;
 
-        const userMessage: Message = { sender: 'user', text };
+        const userMessage: Message = { id: `user-${Date.now()}`, sender: 'user', text };
         setMessages(prevMessages => [...prevMessages, userMessage]);
         setIsLoading(true);
 
@@ -426,7 +484,7 @@ For every user input, follow this structured loop internally:
             setIsLoading(false);
         }
     } else {
-        const userMessage: Message = { sender: 'user', text };
+        const userMessage: Message = { id: `user-${Date.now()}`, sender: 'user', text };
         if (file) {
           userMessage.imagePreview = URL.createObjectURL(file);
         }
@@ -476,6 +534,7 @@ For every user input, follow this structured loop internally:
 
                 const crisisData = JSON.parse(response.text);
                 const crisisMessage: Message = {
+                    id: `ai-crisis-${Date.now()}`,
                     sender: 'ai',
                     text: crisisData.response,
                     isCrisis: true,
@@ -487,6 +546,7 @@ For every user input, follow this structured loop internally:
                 console.error("Crisis generation error:", error);
                 // FAILSAFE MECHANISM
                 const failsafeMessage: Message = {
+                    id: `ai-failsafe-${Date.now()}`,
                     sender: 'ai',
                     text: "I'm deeply concerned about what you're sharing. Please reach out for help immediately.",
                     isCrisis: true,
@@ -537,7 +597,7 @@ For every user input, follow this structured loop internally:
                 finalAiResponse = aiResponse.replace(journalToken, '').trim();
             }
 
-            const aiMessage: Message = { sender: 'ai', text: finalAiResponse };
+            const aiMessage: Message = { id: `ai-${Date.now()}`, sender: 'ai', text: finalAiResponse };
             if (isJournalWorthy) {
                 aiMessage.isJournalWorthy = true;
                 aiMessage.originalUserMessage = text;
@@ -591,7 +651,7 @@ For every user input, follow this structured loop internally:
                 <div className="flex flex-col space-y-4">
                     {messages.map((msg, index) => (
                         <div 
-                          key={index}
+                          key={msg.id}
                           className={`flex flex-col items-start w-full ${
                             msg.sender === 'user' ? 'self-end' : 'self-start'
                           }`}
@@ -619,6 +679,17 @@ For every user input, follow this structured loop internally:
                                       <img src={msg.imagePreview} alt="User upload" className="mb-2 rounded-lg max-w-xs" />
                                     )}
                                     <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                                    {msg.sender === 'ai' && msg.text && (
+                                        <div className="flex justify-end mt-1 -mr-1">
+                                            <button 
+                                                onClick={() => handleSpeak(msg)}
+                                                className="p-1 rounded-full text-white/70 hover:text-white hover:bg-black/10 transition-colors"
+                                                aria-label={speakingMessageId === msg.id ? "Stop reading" : "Read message aloud"}
+                                            >
+                                                <SpeakerIcon isSpeaking={speakingMessageId === msg.id} />
+                                            </button>
+                                        </div>
+                                    )}
                                   </div>
                                 )}
                             </div>

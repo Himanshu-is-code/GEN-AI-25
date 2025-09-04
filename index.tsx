@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -9,8 +10,11 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+
+const clientId = '34669435681-nreq2lfgm4f4a7m2josm3khpajumnr83.apps.googleusercontent.com';
+
 root.render(
-  <React.StrictMode>
+  <GoogleOAuthProvider clientId={clientId}>
     <App />
-  </React.StrictMode>
+  </GoogleOAuthProvider>
 );

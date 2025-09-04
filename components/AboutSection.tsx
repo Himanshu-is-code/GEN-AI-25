@@ -9,7 +9,7 @@ const AboutSection: React.FC = () => {
             <div className="relative">
               <div className="relative rounded-xl overflow-hidden shadow-2xl h-96">
                 <img 
-                  src="https://images.unsplash.com/photo-1506126613408-eca07ce80073?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80" 
+                  src="https://i.postimg.cc/Kz61dT8f/Google-AI-Studio-2025-09-04-T12-29-15-318-Z.png" 
                   alt="A person in a calm, meditative pose, representing mental well-being." 
                   className="w-full h-full object-cover"
                 />
