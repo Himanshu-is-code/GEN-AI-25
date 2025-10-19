@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, Chat, Type } from "@google/genai";
 import { AiInput } from './AiInput';
@@ -68,6 +69,11 @@ const detectCrisisIntent = (userMessage: string): boolean => {
   return crisisKeywords.some(keyword => message.includes(keyword));
 };
 
+interface GroundingSource {
+  uri: string;
+  title: string;
+}
+
 // Message type
 interface Message {
   id: string;
@@ -81,6 +87,7 @@ interface Message {
   isCrisis?: boolean;
   resource?: CrisisResource;
   friendMessageDraft?: string;
+  sources?: GroundingSource[];
 }
 
 // Component Props
@@ -118,6 +125,10 @@ const SpeakerIcon = ({ isSpeaking }: { isSpeaking: boolean }) => (
         <path d="M19.07 4.93a10 10 0 0 1 0 14.14" className={isSpeaking ? 'opacity-100 animate-pulse' : 'opacity-50'} style={{ animationDelay: '0.2s' }} />
         <path d="M15.54 8.46a5 5 0 0 1 0 7.07" className={isSpeaking ? 'opacity-100 animate-pulse' : 'opacity-50'} />
     </svg>
+);
+
+const LinkIcon = ({ className }: { className: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
 );
 
 
@@ -288,6 +299,7 @@ const ChatPage: React.FC<ChatProps> = ({ theme, onNavigateHome, onNavigateToJour
             const newChat = ai.chats.create({
                 model: 'gemini-2.5-flash',
                 config: {
+                    tools: [{googleSearch: {}}],
                     systemInstruction: `### **🔹 System Instructions: Project AURA (Autonomous Understanding & Responsible Action)**
 
 **🎯 Primary Directive:**
@@ -328,6 +340,14 @@ For every user input, follow this structured loop internally:
 - If the user's message is a personal reflection, describes their feelings, or recounts their day in a way that would be suitable for a journal entry, you MUST append the exact token \`[JOURNAL_WORTHY]\` to the very end of your response.
 - Do NOT use this token for simple questions, greetings, or factual inquiries. Use it only when the user is sharing personal experiences.
 - Example: If the user says "I had a really tough fight with my friend today," your response might be "I'm sorry to hear that. Fights with friends are difficult.[JOURNAL_WORTHY]".
+
+---
+
+### **🛠️ Tool Usage: Google Search**
+- When the user asks a factual question, especially about mental health topics, symptoms, treatments, or wellness techniques, you MUST use the Google Search tool to ground your response in reliable information.
+- Always cite your sources by providing the links from the search results.
+- Your primary goal is to provide safe, accurate, and helpful information. If you are unsure about a topic, use the search tool.
+- Do NOT use the search tool for personal conversations or reflections. Only for factual inquiries.
 
 ---
 
@@ -597,7 +617,23 @@ For every user input, follow this structured loop internally:
                 finalAiResponse = aiResponse.replace(journalToken, '').trim();
             }
 
-            const aiMessage: Message = { id: `ai-${Date.now()}`, sender: 'ai', text: finalAiResponse };
+            const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+            const sources: GroundingSource[] = [];
+            if (groundingMetadata?.groundingChunks) {
+                for (const chunk of groundingMetadata.groundingChunks) {
+                    if (chunk.web) {
+                        sources.push({ uri: chunk.web.uri, title: chunk.web.title });
+                    }
+                }
+            }
+
+            const aiMessage: Message = { 
+              id: `ai-${Date.now()}`, 
+              sender: 'ai', 
+              text: finalAiResponse,
+              sources: sources.length > 0 ? sources : undefined,
+            };
+
             if (isJournalWorthy) {
                 aiMessage.isJournalWorthy = true;
                 aiMessage.originalUserMessage = text;
@@ -688,6 +724,21 @@ For every user input, follow this structured loop internally:
                                             >
                                                 <SpeakerIcon isSpeaking={speakingMessageId === msg.id} />
                                             </button>
+                                        </div>
+                                    )}
+                                    {msg.sources && msg.sources.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t border-white/20">
+                                            <h4 className="text-xs font-semibold text-white/80 mb-1.5">Sources:</h4>
+                                            <ul className="text-xs space-y-1.5">
+                                                {msg.sources.map((source, i) => (
+                                                    <li key={i}>
+                                                        <a href={source.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/90 hover:text-white hover:underline">
+                                                            <LinkIcon className="w-3 h-3 flex-shrink-0" />
+                                                            <span className="truncate">{source.title || new URL(source.uri).hostname}</span>
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
                                     )}
                                   </div>
