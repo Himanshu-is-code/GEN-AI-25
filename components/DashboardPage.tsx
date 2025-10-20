@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { GoogleGenAI, Type } from "@google/genai";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import type { JournalEntry, Resource } from '../types';
+import type { JournalEntry, Resource, UserProfile } from '../types';
 
 // --- Helper Functions (copied from JournalPage for encapsulation) ---
 const getWeekId = (d: Date) => {
@@ -13,6 +13,7 @@ const getWeekId = (d: Date) => {
     return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 };
 const getLocalStorageKey = (weekId: string) => `mindful-youth-journal-${weekId}`;
+const getProfileLocalStorageKey = () => `mindful-youth-profile`;
 
 // --- Data (copied from ResourceHub for encapsulation) ---
 const resources: Resource[] = [
@@ -21,6 +22,13 @@ const resources: Resource[] = [
   { name: 'NAMI (National Alliance on Mental Illness)', description: 'The largest grassroots mental health organization in the U.S.', url: 'https://www.nami.org/' },
   { name: 'The Jed Foundation (JED)', description: 'Protects emotional health and prevents suicide for teens and young adults.', url: 'https://www.jedfoundation.org/' },
 ];
+
+const keyLifeAreasOptions = [
+  "Work / Career", "Academics / School", "Family & Home Life",
+  "Friendships & Social Life", "Romantic Relationships", "Health & Fitness",
+  "Personal Growth", "Finances",
+];
+
 
 // --- Icons ---
 const HomeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>);
@@ -180,6 +188,102 @@ const WellnessSummaryWidget: React.FC<WellnessSummaryWidgetProps> = ({ summaryDa
     );
 };
 
+// --- Profile Widget ---
+const ProfileWidget: React.FC<{ profile: UserProfile; onSave: (newProfile: UserProfile) => void; }> = ({ profile, onSave }) => {
+    const [localProfile, setLocalProfile] = useState<UserProfile>(profile);
+    const [isSaved, setIsSaved] = useState(false);
+
+    useEffect(() => {
+        setLocalProfile(profile);
+    }, [profile]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setLocalProfile(prev => ({ ...prev, [name]: value }));
+    };
+
+    const toggleLifeArea = (area: string) => {
+        const newAreas = localProfile.keyLifeAreas.includes(area)
+            ? localProfile.keyLifeAreas.filter(a => a !== area)
+            : [...localProfile.keyLifeAreas, area];
+        setLocalProfile(prev => ({ ...prev, keyLifeAreas: newAreas }));
+    };
+
+    const handleSave = () => {
+        onSave(localProfile);
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+    };
+    
+    const hasChanges = JSON.stringify(profile) !== JSON.stringify(localProfile);
+
+    return (
+        <div className="p-4 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3">Your Profile</h3>
+            <div className="space-y-4">
+                <div>
+                    <label htmlFor="name" className="text-sm font-medium text-slate-600 dark:text-slate-400">Nickname</label>
+                    <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        value={localProfile.name}
+                        onChange={handleInputChange}
+                        placeholder="What should I call you?"
+                        className="mt-1 w-full text-sm px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-1 focus:ring-calm-orange-500"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="profession" className="text-sm font-medium text-slate-600 dark:text-slate-400">Profession / Study</label>
+                    <input
+                        type="text"
+                        name="profession"
+                        id="profession"
+                        value={localProfile.profession}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Student, Artist"
+                        className="mt-1 w-full text-sm px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-1 focus:ring-calm-orange-500"
+                    />
+                </div>
+                <div>
+                    <label className="text-sm font-medium text-slate-600 dark:text-slate-400">Key Life Areas</label>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {keyLifeAreasOptions.map(area => (
+                            <button
+                                key={area}
+                                onClick={() => toggleLifeArea(area)}
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+                                    localProfile.keyLifeAreas.includes(area)
+                                        ? 'bg-calm-blue-500 border-calm-blue-500 text-white'
+                                        : 'bg-slate-200 dark:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'
+                                }`}
+                            >
+                                {area}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="pt-2">
+                    <button
+                        onClick={handleSave}
+                        disabled={!hasChanges || isSaved}
+                        className={`w-full text-sm font-semibold py-2 px-4 rounded-md transition-all duration-200 ${
+                            isSaved
+                                ? 'bg-calm-green-500 text-white'
+                                : hasChanges
+                                ? 'bg-calm-orange-500 hover:bg-calm-orange-600 text-white'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                        }`}
+                    >
+                        {isSaved ? 'Saved!' : 'Save Details'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // --- Consistency Tracker Widget ---
 const ConsistencyTrackerWidget: React.FC<{ entries: JournalEntry[] }> = ({ entries }) => {
     const { days, streak } = useMemo(() => {
@@ -198,21 +302,23 @@ const ConsistencyTrackerWidget: React.FC<{ entries: JournalEntry[] }> = ({ entri
         }).reverse();
 
         let currentStreak = 0;
-        let today = new Date();
-        let todayStr = today.toISOString().split('T')[0];
+        let streakDate = new Date(); // Start checking from today
 
-        if(entryDates.has(todayStr)) {
-            currentStreak = 1;
-            let streakContinues = true;
-            for (let i = 1; i < 7 && streakContinues; i++) {
-                const prevDay = new Date();
-                prevDay.setDate(prevDay.getDate() - i);
-                const prevDayStr = prevDay.toISOString().split('T')[0];
-                if (entryDates.has(prevDayStr)) {
-                    currentStreak++;
-                } else {
-                    streakContinues = false;
-                }
+        // If no entry today, check from yesterday to be forgiving
+        if (!entryDates.has(streakDate.toISOString().split('T')[0])) {
+            streakDate.setDate(streakDate.getDate() - 1);
+        }
+
+        // Now count backwards from streakDate
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(streakDate);
+            d.setDate(streakDate.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            
+            if (entryDates.has(dateStr)) {
+                currentStreak++;
+            } else {
+                break; // Streak broken
             }
         }
         
@@ -254,6 +360,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
     const [summaryData, setSummaryData] = useState<{ summary: string; themes: { theme: string; reflection: string }[] } | null>(null);
     const [isSummaryLoading, setIsSummaryLoading] = useState(true);
     const [summaryError, setSummaryError] = useState<string | null>(null);
+    const [profile, setProfile] = useState<UserProfile>({ name: '', profession: '', keyLifeAreas: [] });
 
     useEffect(() => {
         try {
@@ -262,6 +369,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
             setEntries(savedEntries ? JSON.parse(savedEntries) : []);
         } catch (e) { console.error("Failed to load journal entries:", e); }
     }, [currentWeekId]);
+
+    useEffect(() => {
+        try {
+            const key = getProfileLocalStorageKey();
+            const savedProfile = localStorage.getItem(key);
+            if (savedProfile) {
+                setProfile(JSON.parse(savedProfile));
+            }
+        } catch (e) { console.error("Failed to load profile:", e); }
+    }, []);
+
+    const handleProfileSave = (newProfile: UserProfile) => {
+        setProfile(newProfile);
+        try {
+            const key = getProfileLocalStorageKey();
+            localStorage.setItem(key, JSON.stringify(newProfile));
+        } catch (e) {
+            console.error("Failed to save profile:", e);
+        }
+    };
+
 
     useEffect(() => {
         const generateSummary = async () => {
@@ -346,6 +474,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
         hidden: { y: 20, opacity: 0 },
         visible: { y: 0, opacity: 1 },
     };
+    
+    const greetingName = profile.name.trim() ? `, ${profile.name}` : '';
 
     return (
         <div className="flex flex-col h-screen bg-white dark:bg-black text-slate-800 dark:text-slate-200 transition-colors duration-300">
@@ -360,7 +490,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
                     <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-2">
                         Your <span className="gradient-text">Dashboard</span>
                     </h1>
-                    <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">Welcome back. Here's a look at your recent activity.</p>
+                    <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">Welcome back{greetingName}. Here's a look at your recent activity.</p>
                     
                     {/* @ts-ignore */}
                     <motion.div
@@ -387,6 +517,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
                         {/* Right Column */}
                         <div className="space-y-6">
                             {/* @ts-ignore */}
+                            <motion.div variants={itemVariants}>
+                                <ProfileWidget profile={profile} onSave={handleProfileSave} />
+                            </motion.div>
+                             {/* @ts-ignore */}
                             <motion.div variants={itemVariants}>
                                 <ConsistencyTrackerWidget entries={entries} />
                             </motion.div>

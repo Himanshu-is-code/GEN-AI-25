@@ -26,3 +26,9 @@ export interface JournalEntry {
     analysis?: AIAnalysis;
     isAnalyzing?: boolean;
 }
+
+export interface UserProfile {
+  name: string;
+  profession: string;
+  keyLifeAreas: string[];
+}
