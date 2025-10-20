@@ -18,6 +18,7 @@ import JournalSection from './components/JournalSection';
 import WriterSection from './components/WriterSection';
 import JournalPage from './components/JournalPage';
 import MessageWriterPage from './components/MessageWriterPage';
+import DashboardPage from './components/DashboardPage';
 
 // --- ThemeSwitch Component ---
 const ThemeSwitch: React.FC<{ theme: 'light' | 'dark', toggleTheme: () => void }> = ({ theme, toggleTheme }) => {
@@ -670,12 +671,12 @@ const logoSvg = (color: string) => `<svg xmlns="http://www.w3.org/2000/svg" widt
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [activeSection, setActiveSection] = useState('#home');
-  const [page, setPage] = useState<'home' | 'chat' | 'journal' | 'writer'>('home');
+  const [page, setPage] = useState<'home' | 'chat' | 'journal' | 'writer' | 'dashboard'>('home');
   const [isAppReady, setIsAppReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [initialAuthMode, setInitialAuthMode] = useState<'prompt' | 'login' | 'signup'>('prompt');
-  const [authRedirect, setAuthRedirect] = useState<'chat' | 'journal' | 'home' | 'writer'>('home');
+  const [authRedirect, setAuthRedirect] = useState<'chat' | 'journal' | 'home' | 'writer' | 'dashboard'>('dashboard');
   const [initialSelectedEntryId, setInitialSelectedEntryId] = useState<string | null>(null);
 
   const mainRef = useRef<HTMLElement>(null);
@@ -708,26 +709,31 @@ const App: React.FC = () => {
     setIsAuthModalOpen(false);
   }, []);
 
-  const handleAuthSuccess = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer') => {
+  const handleAuthSuccess = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer' | 'dashboard') => {
     setIsLoggedIn(true);
     closeAuthModal();
-    if (targetPage !== 'home') {
-      setTimeout(() => setPage(targetPage), 300);
-    }
+    setTimeout(() => setPage(targetPage), 300);
   }, [closeAuthModal]);
   
-  const handleGuestLogin = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer') => {
+  const handleGuestLogin = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer' | 'dashboard') => {
     setIsLoggedIn(true);
     closeAuthModal();
-    if (targetPage !== 'home') {
-      setTimeout(() => setPage(targetPage), 300);
-    }
+    setTimeout(() => setPage(targetPage), 300);
   }, [closeAuthModal]);
 
   const handleLogout = useCallback(() => {
     setIsLoggedIn(false);
     setPage('home');
   }, []);
+
+  const navigateToDashboard = useCallback(() => {
+    if (isLoggedIn) {
+      setPage('dashboard');
+    } else {
+      setAuthRedirect('dashboard');
+      openAuthModal('prompt');
+    }
+  }, [isLoggedIn, openAuthModal]);
   
   const navigateToChat = useCallback(() => {
     if (isLoggedIn) {
@@ -766,7 +772,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleLoginClick = useCallback(() => {
-      setAuthRedirect('home');
+      setAuthRedirect('dashboard');
       openAuthModal('prompt');
   }, [openAuthModal]);
 
@@ -774,13 +780,20 @@ const App: React.FC = () => {
       setInitialSelectedEntryId(null);
   }, []);
   
-    const navItems: PillNavItem[] = useMemo(() => [
+  const navItems: PillNavItem[] = useMemo(() => {
+    const baseItems = [
         { label: 'Features', href: '#features' },
         { label: 'Journal', href: '#journal', onClick: navigateToJournal },
         { label: 'Writer', href: '#writer', onClick: navigateToWriter },
         { label: 'About', href: '#about' },
         { label: 'Resources', href: '#resources' },
-    ], [navigateToJournal, navigateToWriter]);
+    ];
+    if (isLoggedIn) {
+        return [{ label: 'Dashboard', href: '#dashboard', onClick: navigateToDashboard }, ...baseItems];
+    }
+    return baseItems;
+  }, [isLoggedIn, navigateToJournal, navigateToWriter, navigateToDashboard]);
+
 
   useEffect(() => {
     if (page !== 'home') return;
@@ -818,6 +831,16 @@ const App: React.FC = () => {
 
   if (!isAppReady) {
     return <LoadingScreen theme={theme} />;
+  }
+  
+  if (page === 'dashboard') {
+    return <DashboardPage 
+        theme={theme} 
+        onNavigateHome={navigateToHome} 
+        onNavigateToChat={navigateToChat}
+        onNavigateToJournal={navigateToJournal}
+        onNavigateToWriter={navigateToWriter}
+    />;
   }
 
   if (page === 'chat') {
@@ -874,6 +897,7 @@ const App: React.FC = () => {
                     onNavigateToChat={navigateToChat}
                     onNavigateToJournal={navigateToJournal}
                     onNavigateToWriter={navigateToWriter}
+                    onNavigateToDashboard={navigateToDashboard}
                     onScrollToResources={() => scrollToId('resources')}
                 />
             </section>
@@ -891,7 +915,12 @@ const App: React.FC = () => {
                 <ResourceHub />
             </section>
         </div>
-        <FinalCTA onStartJourney={navigateToChat} onOpenJournal={navigateToJournal} onNavigateToWriter={navigateToWriter} />
+        <FinalCTA 
+            onStartJourney={navigateToChat} 
+            onOpenJournal={navigateToJournal} 
+            onNavigateToWriter={navigateToWriter} 
+            onNavigateToDashboard={navigateToDashboard}
+        />
       </main>
       <Footer />
       

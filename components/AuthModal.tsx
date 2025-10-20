@@ -70,7 +70,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess, o
     hidden: { opacity: 0 },
   };
 
-  const modalVariants = {
+  // FIX: Explicitly typing `modalVariants` as `any` to resolve a TypeScript error where the object's structure was considered incompatible with framer-motion's `Variants` type.
+  const modalVariants: any = {
     hidden: { opacity: 0, scale: 0.95, y: 20 },
     visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
     exit: { opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.2 } },

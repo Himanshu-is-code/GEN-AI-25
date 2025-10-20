@@ -5,6 +5,7 @@ interface FinalCTAProps {
     onStartJourney: () => void;
     onOpenJournal: () => void;
     onNavigateToWriter: () => void;
+    onNavigateToDashboard: () => void;
 }
 
 const ArrowRightIcon = () => (
@@ -14,7 +15,7 @@ const ArrowRightIcon = () => (
     </svg>
 );
 
-const FinalCTA: React.FC<FinalCTAProps> = ({ onStartJourney, onOpenJournal, onNavigateToWriter }) => {
+const FinalCTA: React.FC<FinalCTAProps> = ({ onStartJourney, onOpenJournal, onNavigateToWriter, onNavigateToDashboard }) => {
     return (
         // FIX: Framer Motion props are not being recognized by TypeScript due to a potential version issue. Using ts-ignore as a workaround.
         // @ts-ignore
@@ -25,7 +26,7 @@ const FinalCTA: React.FC<FinalCTAProps> = ({ onStartJourney, onOpenJournal, onNa
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="py-16 px-4 sm:px-6 lg:px-8"
         >
-            <div className="relative max-w-5xl mx-auto overflow-hidden rounded-[40px] bg-calm-orange-500 p-6 sm:p-10 md:p-16">
+            <div className="relative max-w-6xl mx-auto overflow-hidden rounded-[40px] bg-calm-orange-500 p-6 sm:p-10 md:p-16">
                 <div className="absolute inset-0 hidden h-full w-full overflow-hidden md:block">
                     <div className="absolute top-1/2 right-[-45%] aspect-square h-[800px] w-[800px] -translate-y-1/2">
                         <div className="absolute inset-0 rounded-full bg-calm-orange-400 opacity-30"></div>
@@ -45,11 +46,19 @@ const FinalCTA: React.FC<FinalCTAProps> = ({ onStartJourney, onOpenJournal, onNa
                         A safe space is just a click away. Start a confidential conversation, reflect in your journal, or find the right words for a tough talk.
                     </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                        <button 
+                            onClick={onNavigateToDashboard}
+                            className="group flex w-full items-center justify-between rounded-full bg-black px-5 py-3 text-white transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-calm-orange-500 focus:ring-white">
+                            <span className="font-medium">View Dashboard</span>
+                            <span className="h-6 w-6 flex-shrink-0 rounded-full bg-white text-black flex items-center justify-center transition-transform duration-300 group-hover:rotate-45">
+                                <ArrowRightIcon />
+                            </span>
+                        </button>
                         <button 
                             onClick={onStartJourney}
                             className="group flex w-full items-center justify-between rounded-full bg-black px-5 py-3 text-white transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-calm-orange-500 focus:ring-white">
-                            <span className="font-medium">Start a Conversation</span>
+                            <span className="font-medium">Start Conversation</span>
                             <span className="h-6 w-6 flex-shrink-0 rounded-full bg-white text-black flex items-center justify-center transition-transform duration-300 group-hover:rotate-45">
                                 <ArrowRightIcon />
                             </span>

@@ -3,6 +3,15 @@
 import React, { useState } from 'react';
 
 // Icons for the features
+const DashboardIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-blue-600 dark:text-calm-blue-300">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+    </svg>
+);
+
 const ShieldIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-red-600 dark:text-red-300">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
@@ -37,10 +46,18 @@ interface Feature {
     frontDescription: string;
     backTitle: string;
     backItems: string[];
-    color: 'orange' | 'green' | 'purple' | 'red';
+    color: 'orange' | 'green' | 'purple' | 'red' | 'blue';
 }
 
 const featuresData: Feature[] = [
+    {
+        frontIcon: <DashboardIcon />,
+        frontTitle: 'Wellness Dashboard',
+        frontDescription: 'Get a bird\'s-eye view of your weekly progress and mood trends.',
+        backTitle: 'Your Personal Insights',
+        backItems: ["Track mood over time", "AI-powered weekly summary", "Monitor journaling consistency", "Quick access to all tools"],
+        color: 'blue'
+    },
     {
         frontIcon: <ShieldIcon />,
         frontTitle: 'Crisis Navigator',
@@ -116,6 +133,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ feature, onExplore }) => {
           title: 'text-red-800 dark:text-red-200',
           checkIcon: 'text-red-600 dark:text-red-300',
           button: 'bg-red-100/50 text-red-800 dark:bg-red-900/30 dark:text-red-200 hover:bg-red-200/50 dark:hover:bg-red-900/50 focus:ring-red-500'
+      },
+      blue: {
+          front: 'bg-calm-blue-100/20 dark:bg-calm-blue-900/20 border-calm-blue-200/50 dark:border-calm-blue-700/50',
+          back: 'bg-calm-blue-200/80 dark:bg-calm-blue-800/80 border-calm-blue-300/50 dark:border-calm-blue-600/50',
+          iconBg: 'bg-calm-blue-500/20',
+          title: 'text-calm-blue-800 dark:text-calm-blue-200',
+          checkIcon: 'text-calm-blue-600 dark:text-calm-blue-300',
+          button: 'bg-calm-blue-100/50 text-calm-blue-800 dark:bg-calm-blue-900/30 dark:text-calm-blue-200 hover:bg-calm-blue-200/50 dark:hover:bg-calm-blue-900/50 focus:ring-calm-blue-500'
       }
   }
   const classes = colorClasses[color];
@@ -170,6 +195,7 @@ interface FeaturesSectionProps {
   onNavigateToChat: () => void;
   onNavigateToJournal: () => void;
   onNavigateToWriter: () => void;
+  onNavigateToDashboard: () => void;
   onScrollToResources: () => void;
 }
 
@@ -177,6 +203,7 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   onNavigateToChat,
   onNavigateToJournal,
   onNavigateToWriter,
+  onNavigateToDashboard,
   onScrollToResources
 }) => {
     return (
@@ -190,10 +217,13 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                 </p>
             </div>
 
-            <div className="grid gap-8 grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto">
+            <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
                 {featuresData.map((feature, index) => {
                     let exploreAction = () => {};
                     switch (feature.frontTitle) {
+                        case 'Wellness Dashboard':
+                            exploreAction = onNavigateToDashboard;
+                            break;
                         case 'Crisis Navigator':
                             exploreAction = onNavigateToChat;
                             break;
