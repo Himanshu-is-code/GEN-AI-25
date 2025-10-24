@@ -5,7 +5,6 @@ import { gsap } from "gsap";
 import { motion } from 'framer-motion';
 import HeroSection from './components/HeroSection';
 import FeaturesSection from './components/FeaturesSection';
-import ResourceHub from './components/ResourceHub';
 import Footer from './components/Footer';
 import Hyperspeed, { hyperspeedPresets } from './components/Hyperspeed';
 import AboutSection from './components/AboutSection';
@@ -786,7 +785,6 @@ const App: React.FC = () => {
         { label: 'Journal', href: '#journal', onClick: navigateToJournal },
         { label: 'Writer', href: '#writer', onClick: navigateToWriter },
         { label: 'About', href: '#about' },
-        { label: 'Resources', href: '#resources' },
     ];
     if (isLoggedIn) {
         return [{ label: 'Dashboard', href: '#dashboard', onClick: navigateToDashboard }, ...baseItems];
@@ -822,12 +820,6 @@ const App: React.FC = () => {
     return `data:image/svg+xml;utf8,${encodeURIComponent(logoSvg(logoColor))}`;
   }, [theme]);
   
-  const scrollToId = useCallback((id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
 
   if (!isAppReady) {
     return <LoadingScreen theme={theme} />;
@@ -898,7 +890,6 @@ const App: React.FC = () => {
                     onNavigateToJournal={navigateToJournal}
                     onNavigateToWriter={navigateToWriter}
                     onNavigateToDashboard={navigateToDashboard}
-                    onScrollToResources={() => scrollToId('resources')}
                 />
             </section>
             <section id="journal" className="py-20">
@@ -911,9 +902,6 @@ const App: React.FC = () => {
                 <AboutSection />
             </section>
             
-            <section id="resources" className="py-20">
-                <ResourceHub />
-            </section>
         </div>
         <FinalCTA 
             onStartJourney={navigateToChat} 

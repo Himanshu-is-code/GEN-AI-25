@@ -25,13 +25,6 @@ const JournalIcon = () => (
     </svg>
 );
 
-const ResourceIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-green-600 dark:text-calm-green-300">
-        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-    </svg>
-);
-
 const WriterIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-purple-600 dark:text-calm-purple-300">
         <path d="M12 20h9" />
@@ -81,14 +74,6 @@ const featuresData: Feature[] = [
         backTitle: 'Communicate with Confidence',
         backItems: ["Draft messages for parents, friends, or teachers", "Choose your tone and goal", "AI helps you communicate clearly", "Reduces anxiety of what to say"],
         color: 'purple'
-    },
-    {
-        frontIcon: <ResourceIcon />,
-        frontTitle: 'Resource Hub',
-        frontDescription: 'Find curated links for when you need more support.',
-        backTitle: 'Help is Available',
-        backItems: ["Vetted professional organizations", "24/7 support hotlines", "Confidential help for teens", "Specialized LGBTQ+ support"],
-        color: 'green'
     },
 ];
 
@@ -196,7 +181,6 @@ interface FeaturesSectionProps {
   onNavigateToJournal: () => void;
   onNavigateToWriter: () => void;
   onNavigateToDashboard: () => void;
-  onScrollToResources: () => void;
 }
 
 const FeaturesSection: React.FC<FeaturesSectionProps> = ({
@@ -204,7 +188,6 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   onNavigateToJournal,
   onNavigateToWriter,
   onNavigateToDashboard,
-  onScrollToResources
 }) => {
     return (
         <div className="py-10 md:py-16">
@@ -232,9 +215,6 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                             break;
                         case 'Message Writer':
                             exploreAction = onNavigateToWriter;
-                            break;
-                        case 'Resource Hub':
-                            exploreAction = onScrollToResources;
                             break;
                     }
                     return <FeatureCard key={index} feature={feature} onExplore={exploreAction} />;

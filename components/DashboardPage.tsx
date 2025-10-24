@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { GoogleGenAI, Type } from "@google/genai";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import type { JournalEntry, Resource, UserProfile } from '../types';
+import type { JournalEntry, UserProfile } from '../types';
 
 // --- Helper Functions (copied from JournalPage for encapsulation) ---
 const getWeekId = (d: Date) => {
@@ -16,13 +16,6 @@ const getLocalStorageKey = (weekId: string) => `mindful-youth-journal-${weekId}`
 const getProfileLocalStorageKey = () => `mindful-youth-profile`;
 
 // --- Data (copied from ResourceHub for encapsulation) ---
-const resources: Resource[] = [
-  { name: 'The Trevor Project', description: 'Crisis intervention and suicide prevention for LGBTQ young people.', url: 'https://www.thetrevorproject.org/' },
-  { name: 'Kids Help Phone', description: '24/7 national support service for young people in Canada.', url: 'https://kidshelpphone.ca/' },
-  { name: 'NAMI (National Alliance on Mental Illness)', description: 'The largest grassroots mental health organization in the U.S.', url: 'https://www.nami.org/' },
-  { name: 'The Jed Foundation (JED)', description: 'Protects emotional health and prevents suicide for teens and young adults.', url: 'https://www.jedfoundation.org/' },
-];
-
 const keyLifeAreasOptions = [
   "Work / Career", "Academics / School", "Family & Home Life",
   "Friendships & Social Life", "Romantic Relationships", "Health & Fitness",
@@ -463,8 +456,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
         generateSummary();
     }, [entries]);
 
-    const resourceSpotlight = useMemo(() => resources[Math.floor(Math.random() * resources.length)], []);
-
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -532,17 +523,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
                                         <button onClick={onNavigateToChat} className="w-full flex items-center gap-4 p-4 rounded-lg bg-calm-green-100/50 dark:bg-calm-green-900/30 hover:bg-calm-green-100 dark:hover:bg-calm-green-900/50 transition-colors"><ChatIcon /> <span className="font-semibold">Start a New Chat</span></button>
                                         <button onClick={() => onNavigateToJournal()} className="w-full flex items-center gap-4 p-4 rounded-lg bg-calm-orange-100/50 dark:bg-calm-orange-900/30 hover:bg-calm-orange-100 dark:hover:bg-calm-orange-900/50 transition-colors"><JournalIcon /> <span className="font-semibold">Write a Journal Entry</span></button>
                                         <button onClick={onNavigateToWriter} className="w-full flex items-center gap-4 p-4 rounded-lg bg-calm-purple-100/50 dark:bg-calm-purple-900/30 hover:bg-calm-purple-100 dark:hover:bg-calm-purple-900/50 transition-colors"><WriterIcon /> <span className="font-semibold">Draft a Message</span></button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                            {/* @ts-ignore */}
-                            <motion.div variants={itemVariants}>
-                                <div className="p-4 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3">Resource Spotlight</h3>
-                                    <div className="p-3 bg-white dark:bg-slate-800 rounded-lg">
-                                        <h4 className="font-bold text-calm-blue-700 dark:text-calm-blue-300">{resourceSpotlight.name}</h4>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 mb-2">{resourceSpotlight.description}</p>
-                                        <a href={resourceSpotlight.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-calm-blue-600 hover:text-calm-blue-700 dark:text-calm-blue-400 dark:hover:text-calm-blue-300">Learn More &rarr;</a>
                                     </div>
                                 </div>
                             </motion.div>
