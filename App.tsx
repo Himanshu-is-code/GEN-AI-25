@@ -675,7 +675,7 @@ const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [initialAuthMode, setInitialAuthMode] = useState<'prompt' | 'login' | 'signup'>('prompt');
-  const [authRedirect, setAuthRedirect] = useState<'chat' | 'journal' | 'home' | 'writer' | 'dashboard'>('dashboard');
+  const [authRedirect, setAuthRedirect] = useState<'chat' | 'journal' | 'home' | 'writer' | 'dashboard'>('home');
   const [initialSelectedEntryId, setInitialSelectedEntryId] = useState<string | null>(null);
 
   const mainRef = useRef<HTMLElement>(null);
@@ -771,7 +771,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleLoginClick = useCallback(() => {
-      setAuthRedirect('dashboard');
+      setAuthRedirect('home');
       openAuthModal('prompt');
   }, [openAuthModal]);
 
