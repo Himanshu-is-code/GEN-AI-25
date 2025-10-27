@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface FinalCTAProps {
-    onNavigateToLive: () => void;
+    onStartJourney: () => void;
     onOpenJournal: () => void;
     onNavigateToWriter: () => void;
     onNavigateToDashboard: () => void;
@@ -15,7 +15,7 @@ const ArrowRightIcon = () => (
     </svg>
 );
 
-const FinalCTA: React.FC<FinalCTAProps> = ({ onNavigateToLive, onOpenJournal, onNavigateToWriter, onNavigateToDashboard }) => {
+const FinalCTA: React.FC<FinalCTAProps> = ({ onStartJourney, onOpenJournal, onNavigateToWriter, onNavigateToDashboard }) => {
     return (
         // FIX: Framer Motion props are not being recognized by TypeScript due to a potential version issue. Using ts-ignore as a workaround.
         // @ts-ignore
@@ -56,9 +56,9 @@ const FinalCTA: React.FC<FinalCTAProps> = ({ onNavigateToLive, onOpenJournal, on
                             </span>
                         </button>
                         <button 
-                            onClick={onNavigateToLive}
+                            onClick={onStartJourney}
                             className="group flex w-full items-center justify-between rounded-full bg-black px-5 py-3 text-white transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-calm-orange-500 focus:ring-white">
-                            <span className="font-medium">Talk to Aura</span>
+                            <span className="font-medium">Start Conversation</span>
                             <span className="h-6 w-6 flex-shrink-0 rounded-full bg-white text-black flex items-center justify-center transition-transform duration-300 group-hover:rotate-45">
                                 <ArrowRightIcon />
                             </span>
