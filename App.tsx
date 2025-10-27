@@ -1,5 +1,6 @@
 
 
+
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { gsap } from "gsap";
 import { motion } from 'framer-motion';
@@ -18,6 +19,7 @@ import WriterSection from './components/WriterSection';
 import JournalPage from './components/JournalPage';
 import MessageWriterPage from './components/MessageWriterPage';
 import DashboardPage from './components/DashboardPage';
+import LiveAgentPage from './components/LiveAgentPage';
 
 // --- ThemeSwitch Component ---
 const ThemeSwitch: React.FC<{ theme: 'light' | 'dark', toggleTheme: () => void }> = ({ theme, toggleTheme }) => {
@@ -670,12 +672,12 @@ const logoSvg = (color: string) => `<svg xmlns="http://www.w3.org/2000/svg" widt
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [activeSection, setActiveSection] = useState('#home');
-  const [page, setPage] = useState<'home' | 'chat' | 'journal' | 'writer' | 'dashboard'>('home');
+  const [page, setPage] = useState<'home' | 'chat' | 'journal' | 'writer' | 'dashboard' | 'live'>('home');
   const [isAppReady, setIsAppReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [initialAuthMode, setInitialAuthMode] = useState<'prompt' | 'login' | 'signup'>('prompt');
-  const [authRedirect, setAuthRedirect] = useState<'chat' | 'journal' | 'home' | 'writer' | 'dashboard'>('home');
+  const [authRedirect, setAuthRedirect] = useState<'chat' | 'journal' | 'home' | 'writer' | 'dashboard' | 'live'>('home');
   const [initialSelectedEntryId, setInitialSelectedEntryId] = useState<string | null>(null);
 
   const mainRef = useRef<HTMLElement>(null);
@@ -708,13 +710,13 @@ const App: React.FC = () => {
     setIsAuthModalOpen(false);
   }, []);
 
-  const handleAuthSuccess = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer' | 'dashboard') => {
+  const handleAuthSuccess = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer' | 'dashboard' | 'live') => {
     setIsLoggedIn(true);
     closeAuthModal();
     setTimeout(() => setPage(targetPage), 300);
   }, [closeAuthModal]);
   
-  const handleGuestLogin = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer' | 'dashboard') => {
+  const handleGuestLogin = useCallback((targetPage: 'chat' | 'journal' | 'home' | 'writer' | 'dashboard' | 'live') => {
     setIsLoggedIn(true);
     closeAuthModal();
     setTimeout(() => setPage(targetPage), 300);
@@ -766,6 +768,15 @@ const App: React.FC = () => {
     }
   }, [isLoggedIn, openAuthModal]);
 
+  const navigateToLive = useCallback(() => {
+    if (isLoggedIn) {
+      setPage('live');
+    } else {
+      setAuthRedirect('live');
+      openAuthModal('prompt');
+    }
+  }, [isLoggedIn, openAuthModal]);
+
   const navigateToHome = useCallback(() => {
     setPage('home');
   }, []);
@@ -782,6 +793,7 @@ const App: React.FC = () => {
   const navItems: PillNavItem[] = useMemo(() => {
     const baseItems = [
         { label: 'Features', href: '#features' },
+        { label: 'Aura Voice', href: '#live', onClick: navigateToLive },
         { label: 'Journal', href: '#journal', onClick: navigateToJournal },
         { label: 'Writer', href: '#writer', onClick: navigateToWriter },
         { label: 'About', href: '#about' },
@@ -790,7 +802,7 @@ const App: React.FC = () => {
         return [{ label: 'Dashboard', href: '#dashboard', onClick: navigateToDashboard }, ...baseItems];
     }
     return baseItems;
-  }, [isLoggedIn, navigateToJournal, navigateToWriter, navigateToDashboard]);
+  }, [isLoggedIn, navigateToJournal, navigateToWriter, navigateToDashboard, navigateToLive]);
 
 
   useEffect(() => {
@@ -823,6 +835,10 @@ const App: React.FC = () => {
 
   if (!isAppReady) {
     return <LoadingScreen theme={theme} />;
+  }
+  
+  if (page === 'live') {
+    return <LiveAgentPage theme={theme} onNavigateHome={navigateToHome} />;
   }
   
   if (page === 'dashboard') {
@@ -890,6 +906,7 @@ const App: React.FC = () => {
                     onNavigateToJournal={navigateToJournal}
                     onNavigateToWriter={navigateToWriter}
                     onNavigateToDashboard={navigateToDashboard}
+                    onNavigateToLive={navigateToLive}
                 />
             </section>
             <section id="journal" className="py-20">
@@ -904,7 +921,7 @@ const App: React.FC = () => {
             
         </div>
         <FinalCTA 
-            onStartJourney={navigateToChat} 
+            onNavigateToLive={navigateToLive} 
             onOpenJournal={navigateToJournal} 
             onNavigateToWriter={navigateToWriter} 
             onNavigateToDashboard={navigateToDashboard}

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 
 // Icons for the features
@@ -12,11 +13,20 @@ const DashboardIcon = () => (
     </svg>
 );
 
-const ShieldIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-red-600 dark:text-red-300">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+const AuraIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-green-600 dark:text-calm-green-300">
+        <circle cx="12" cy="12" r="2" />
+        <path d="M12 6V4" />
+        <path d="M12 20v-2" />
+        <path d="M16.95 7.05 18.36 5.64" />
+        <path d="M5.64 18.36 7.05 16.95" />
+        <path d="M18 12h2" />
+        <path d="M4 12H2" />
+        <path d="M16.95 16.95 18.36 18.36" />
+        <path d="M5.64 5.64 7.05 7.05" />
     </svg>
 );
+
 
 const JournalIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-orange-600 dark:text-calm-orange-300">
@@ -52,12 +62,12 @@ const featuresData: Feature[] = [
         color: 'blue'
     },
     {
-        frontIcon: <ShieldIcon />,
-        frontTitle: 'Crisis Navigator',
-        frontDescription: 'Detects crisis language and provides immediate, confidential access to safety resources.',
-        backTitle: 'Prioritizing Your Safety',
-        backItems: ["Automatic crisis detection", "Immediate access to lifelines", "Confidential & secure", "Always-on safety net"],
-        color: 'red'
+        frontIcon: <AuraIcon />,
+        frontTitle: 'Aura Voice Companion',
+        frontDescription: 'Engage in a real-time, supportive conversation with our AI companion. Just talk.',
+        backTitle: 'A Natural Conversation',
+        backItems: ["Real-time voice chat", "Empathetic listening", "Live transcription", "A private, safe space"],
+        color: 'green'
     },
     {
         frontIcon: <JournalIcon />,
@@ -181,6 +191,7 @@ interface FeaturesSectionProps {
   onNavigateToJournal: () => void;
   onNavigateToWriter: () => void;
   onNavigateToDashboard: () => void;
+  onNavigateToLive: () => void;
 }
 
 const FeaturesSection: React.FC<FeaturesSectionProps> = ({
@@ -188,6 +199,7 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   onNavigateToJournal,
   onNavigateToWriter,
   onNavigateToDashboard,
+  onNavigateToLive
 }) => {
     return (
         <div className="py-10 md:py-16">
@@ -200,15 +212,15 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                 </p>
             </div>
 
-            <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
+            <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
                 {featuresData.map((feature, index) => {
                     let exploreAction = () => {};
                     switch (feature.frontTitle) {
                         case 'Wellness Dashboard':
                             exploreAction = onNavigateToDashboard;
                             break;
-                        case 'Crisis Navigator':
-                            exploreAction = onNavigateToChat;
+                        case 'Aura Voice Companion':
+                            exploreAction = onNavigateToLive;
                             break;
                         case 'AI-Powered Journal':
                             exploreAction = onNavigateToJournal;
