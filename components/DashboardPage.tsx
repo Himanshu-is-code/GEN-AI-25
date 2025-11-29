@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { GoogleGenAI, Type } from "@google/genai";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { JournalEntry, UserProfile } from '../types';
 
-// --- Helper Functions (copied from JournalPage for encapsulation) ---
+// --- Helper Functions ---
 const getWeekId = (d: Date) => {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
@@ -12,10 +12,12 @@ const getWeekId = (d: Date) => {
     const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
     return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 };
-const getLocalStorageKey = (weekId: string) => `mindful-youth-journal-${weekId}`;
-const getProfileLocalStorageKey = () => `mindful-youth-profile`;
+const getLocalStorageKey = (weekId: string, userId: string) => `mindful-youth-journal-${userId}-${weekId}`;
+const getProfileLocalStorageKey = (userId: string) => `mindful-youth-profile-${userId}`;
+const getSummaryStorageKey = (weekId: string, userId: string) => `mindful-youth-summary-${userId}-${weekId}`;
+const getSummarySigKey = (weekId: string, userId: string) => `mindful-youth-summary-sig-${userId}-${weekId}`;
 
-// --- Data (copied from ResourceHub for encapsulation) ---
+// --- Data ---
 const keyLifeAreasOptions = [
   "Work / Career", "Academics / School", "Family & Home Life",
   "Friendships & Social Life", "Romantic Relationships", "Health & Fitness",
@@ -24,10 +26,16 @@ const keyLifeAreasOptions = [
 
 
 // --- Icons ---
-const HomeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>);
+const ArrowLeftIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+);
 const JournalIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-orange-500"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v15H6.5A2.5 2.5 0 0 1 4 14.5V4.5A2.5 2.5 0 0 1 6.5 2z"/></svg>);
 const ChatIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-green-500"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>);
 const WriterIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-purple-500"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>);
+const RefreshIcon = ({ className = "w-4 h-4" }: { className?: string }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>);
 
 // --- Mood Chart Widget ---
 const MoodChartWidget: React.FC<{ entries: JournalEntry[] }> = ({ entries }) => {
@@ -116,20 +124,24 @@ interface WellnessSummaryWidgetProps {
     isLoading: boolean;
     error: string | null;
     onNavigateToJournal: () => void;
+    onRefresh: () => void;
+    hasEntries: boolean;
 }
 
 const SummaryIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-calm-blue-500"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/><path d="m15 11 4 4"/><path d="M9 12a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>);
 
-const WellnessSummaryWidget: React.FC<WellnessSummaryWidgetProps> = ({ summaryData, isLoading, error, onNavigateToJournal }) => {
+const WellnessSummaryWidget: React.FC<WellnessSummaryWidgetProps> = ({ summaryData, isLoading, error, onNavigateToJournal, onRefresh, hasEntries }) => {
     
     if (isLoading) {
         return (
             <div className="p-4 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 min-h-[200px] flex flex-col">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3">Weekly Wellness Summary</h3>
+                <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Weekly Wellness Summary</h3>
+                </div>
                 <div className="flex-grow flex items-center justify-center">
                     <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                         <div className="w-3 h-3 bg-calm-blue-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-semibold">Reflecting on your week...</span>
+                        <span className="text-sm font-semibold">Generating your summary...</span>
                     </div>
                 </div>
             </div>
@@ -138,9 +150,16 @@ const WellnessSummaryWidget: React.FC<WellnessSummaryWidgetProps> = ({ summaryDa
 
     if (error) {
          return (
-            <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 min-h-[200px] flex flex-col text-center justify-center">
-                <h3 className="font-semibold text-red-700 dark:text-red-300">Could not generate summary</h3>
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>
+            <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 min-h-[200px] flex flex-col">
+                <div className="flex justify-between items-center mb-3">
+                     <h3 className="font-semibold text-red-700 dark:text-red-300">Could not generate summary</h3>
+                     <button onClick={onRefresh} className="p-1.5 rounded-full hover:bg-red-500/10 text-red-600 dark:text-red-400 transition-colors" title="Retry">
+                        <RefreshIcon />
+                    </button>
+                </div>
+                <div className="flex-grow flex items-center justify-center text-center">
+                    <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                </div>
             </div>
         );
     }
@@ -150,25 +169,46 @@ const WellnessSummaryWidget: React.FC<WellnessSummaryWidgetProps> = ({ summaryDa
             <div className="p-4 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 min-h-[200px] flex flex-col text-center justify-center items-center">
                 <SummaryIcon />
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mt-2">Weekly Wellness Summary</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4 max-w-xs">Write a journal entry this week to unlock your personalized summary.</p>
-                <button onClick={onNavigateToJournal} className="text-sm font-semibold bg-calm-blue-500 text-white px-4 py-2 rounded-full hover:bg-calm-blue-600 transition-colors">
-                    Write New Entry
-                </button>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4 max-w-xs">
+                    {hasEntries 
+                        ? "Not enough data to generate a detailed summary yet. Keep journaling!" 
+                        : "Write a journal entry this week to unlock your personalized summary."
+                    }
+                </p>
+                <div className="flex gap-2">
+                    <button onClick={onNavigateToJournal} className="text-sm font-semibold bg-calm-blue-500 text-white px-4 py-2 rounded-full hover:bg-calm-blue-600 transition-colors">
+                        Write New Entry
+                    </button>
+                    {hasEntries && (
+                        <button onClick={onRefresh} className="text-sm font-semibold bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 px-4 py-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors flex items-center gap-2">
+                             <RefreshIcon /> Retry
+                        </button>
+                    )}
+                </div>
             </div>
         );
     }
 
     return (
         <div className="p-4 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3">Weekly Wellness Summary</h3>
+            <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Weekly Wellness Summary</h3>
+                <button 
+                    onClick={onRefresh} 
+                    className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+                    title="Regenerate Summary"
+                >
+                    <RefreshIcon />
+                </button>
+            </div>
             <div className="space-y-4">
-                <p className="text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-lg">{summaryData.summary}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50 leading-relaxed shadow-sm">{summaryData.summary}</p>
                 {summaryData.themes.length > 0 && (
                     <div>
                         <h4 className="font-semibold text-slate-600 dark:text-slate-400 text-sm mb-2">Key themes to reflect on:</h4>
                         <ul className="space-y-3">
                             {summaryData.themes.map((item, index) => (
-                                <li key={index} className="text-sm text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg">
+                                <li key={index} className="text-sm text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/30">
                                     <p className="font-semibold text-slate-700 dark:text-slate-200">{item.theme}</p>
                                     <p className="mt-1 text-slate-500 dark:text-slate-400 italic">"{item.reflection}"</p>
                                 </li>
@@ -341,13 +381,15 @@ const ConsistencyTrackerWidget: React.FC<{ entries: JournalEntry[] }> = ({ entri
 // --- Page Props ---
 interface DashboardPageProps {
   theme: 'light' | 'dark';
+  userId: string;
   onNavigateHome: () => void;
+  onBack: () => void;
   onNavigateToChat: () => void;
   onNavigateToJournal: (entryId?: string) => void;
   onNavigateToWriter: () => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, onNavigateToChat, onNavigateToJournal, onNavigateToWriter }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ theme, userId, onNavigateHome, onBack, onNavigateToChat, onNavigateToJournal, onNavigateToWriter }) => {
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [currentWeekId] = useState(getWeekId(new Date()));
     const [summaryData, setSummaryData] = useState<{ summary: string; themes: { theme: string; reflection: string }[] } | null>(null);
@@ -357,26 +399,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
 
     useEffect(() => {
         try {
-            const key = getLocalStorageKey(currentWeekId);
+            const key = getLocalStorageKey(currentWeekId, userId);
             const savedEntries = localStorage.getItem(key);
             setEntries(savedEntries ? JSON.parse(savedEntries) : []);
         } catch (e) { console.error("Failed to load journal entries:", e); }
-    }, [currentWeekId]);
+    }, [currentWeekId, userId]);
 
     useEffect(() => {
         try {
-            const key = getProfileLocalStorageKey();
+            const key = getProfileLocalStorageKey(userId);
             const savedProfile = localStorage.getItem(key);
             if (savedProfile) {
                 setProfile(JSON.parse(savedProfile));
+            } else {
+                setProfile({ name: '', profession: '', keyLifeAreas: [] });
             }
         } catch (e) { console.error("Failed to load profile:", e); }
-    }, []);
+    }, [userId]);
 
     const handleProfileSave = (newProfile: UserProfile) => {
         setProfile(newProfile);
         try {
-            const key = getProfileLocalStorageKey();
+            const key = getProfileLocalStorageKey(userId);
             localStorage.setItem(key, JSON.stringify(newProfile));
         } catch (e) {
             console.error("Failed to save profile:", e);
@@ -384,77 +428,120 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
     };
 
 
-    useEffect(() => {
-        const generateSummary = async () => {
-            if (entries.length === 0) {
-                setIsSummaryLoading(false);
-                setSummaryData(null);
-                return;
-            }
-    
-            setIsSummaryLoading(true);
-            setSummaryError(null);
-    
-            try {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                const summarySchema = {
-                    type: Type.OBJECT,
-                    properties: {
-                        summary: { type: Type.STRING, description: "A 2-3 sentence compassionate summary of the user's weekly emotional state. Address the user directly in the second person (e.g., 'It seems like you...')." },
-                        themes: {
-                            type: Type.ARRAY,
-                            description: "A list of 2-3 key themes or anxieties, each with an actionable reflection point.",
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    theme: { type: Type.STRING, description: "A concise name for the theme or anxiety (e.g., 'School Stress', 'Friendship Worries')." },
-                                    reflection: { type: Type.STRING, description: "A simple, gentle question or reflection point related to the theme." }
-                                },
-                                required: ['theme', 'reflection']
-                            }
-                        },
-                        isSufficient: { type: Type.BOOLEAN, description: "True if there is enough content to create a meaningful summary, otherwise false." }
-                    },
-                    required: ['summary', 'themes', 'isSufficient']
-                };
-    
-                const allEntriesText = entries.map(e => `Title: ${e.title}\nContent: ${e.content}`).join('\n\n---\n\n');
-    
-                const prompt = `
-                    Analyze the following journal entries from a young person for the week. Your goal is to provide actionable insights in a compassionate and supportive tone.
-                    1. Write a compassionate summary (2-3 sentences) of their weekly emotional state. Address the user directly ("you").
-                    2. Identify and list 2-3 primary themes or anxieties that are recurring in their entries. These should be concise and clear.
-                    3. For each theme/anxiety, provide one simple, actionable reflection point or question to help them think about it further.
-                    Your response must be in JSON format. If there isn't enough content to provide a meaningful summary, set isSufficient to false.
+    const generateSummary = useCallback(async (forceRefresh = false) => {
+        if (entries.length === 0) {
+            setIsSummaryLoading(false);
+            setSummaryData(null);
+            return;
+        }
 
-                    Journal Entries:
-                    "${allEntriesText}"
-                `;
-                
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: prompt,
-                    config: { responseMimeType: "application/json", responseSchema: summarySchema },
-                });
-    
-                const result = JSON.parse(response.text);
-                
-                if (result.isSufficient) {
-                    setSummaryData({ summary: result.summary, themes: result.themes });
-                } else {
-                    setSummaryData(null);
+        const weekId = currentWeekId;
+        const storageKey = getSummaryStorageKey(weekId, userId);
+        const signatureKey = getSummarySigKey(weekId, userId);
+        // Add length check to make signature more robust
+        const currentSignature = `${entries.length}-${entries[0]?.id || 'none'}`;
+
+        if (!forceRefresh) {
+            const savedSummary = localStorage.getItem(storageKey);
+            const savedSignature = localStorage.getItem(signatureKey);
+
+            if (savedSummary && savedSignature === currentSignature) {
+                try {
+                     setSummaryData(JSON.parse(savedSummary));
+                     setIsSummaryLoading(false);
+                     return;
+                } catch(e) {
+                    console.log("Cached summary was invalid");
                 }
-    
-            } catch (e) {
-                console.error("Failed to generate summary:", e);
-                setSummaryError("Couldn't generate your weekly summary. Please try again later.");
-            } finally {
-                setIsSummaryLoading(false);
             }
-        };
-    
-        generateSummary();
-    }, [entries]);
+        }
+
+        setIsSummaryLoading(true);
+        setSummaryError(null);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const summarySchema = {
+                type: Type.OBJECT,
+                properties: {
+                    summary: { type: Type.STRING, description: "A 2-3 sentence compassionate summary of the user's weekly emotional state. Address the user directly in the second person (e.g., 'It seems like you...')." },
+                    themes: {
+                        type: Type.ARRAY,
+                        description: "A list of 2-3 key themes or anxieties, each with an actionable reflection point.",
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                theme: { type: Type.STRING, description: "A concise name for the theme or anxiety (e.g., 'School Stress', 'Friendship Worries')." },
+                                reflection: { type: Type.STRING, description: "A simple, gentle question or reflection point related to the theme." }
+                            },
+                            required: ['theme', 'reflection']
+                        }
+                    },
+                    isSufficient: { type: Type.BOOLEAN, description: "True if there is enough content to create a meaningful summary, otherwise false. Default to true unless input is gibberish." }
+                },
+                required: ['summary', 'themes', 'isSufficient']
+            };
+
+            const allEntriesText = entries.map(e => `Date: ${e.date}\nTitle: ${e.title}\nContent: ${e.content}`).join('\n\n---\n\n');
+
+            const prompt = `
+                Analyze the following journal entries from a young person for the week. Your goal is to provide actionable insights in a compassionate and supportive tone.
+                
+                Task:
+                1. Write a compassionate summary (2-3 sentences) of their weekly emotional state. Address the user directly ("you").
+                2. Identify and list 2-3 primary themes or anxieties that are recurring in their entries. These should be concise and clear.
+                3. For each theme/anxiety, provide one simple, actionable reflection point or question to help them think about it further.
+                
+                Input Data:
+                "${allEntriesText}"
+                
+                Constraint:
+                - If the input text is very short (e.g. just one or two words), try your best to encourage the user to write more, but still provide a valid JSON response with isSufficient=true if possible.
+                - Only set isSufficient=false if the input is completely empty or meaningless random characters.
+            `;
+            
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: { responseMimeType: "application/json", responseSchema: summarySchema },
+            });
+
+            const text = response.text;
+            if (!text) throw new Error("No response from AI");
+
+            // Sanitize potential markdown blocks if schema mode didn't enforce it strictly
+            let cleanJson = text.trim();
+            if (cleanJson.startsWith('```json')) {
+                cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            } else if (cleanJson.startsWith('```')) {
+                 cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
+
+            const result = JSON.parse(cleanJson);
+            
+            if (result.isSufficient) {
+                const data = { summary: result.summary, themes: result.themes };
+                setSummaryData(data);
+                localStorage.setItem(storageKey, JSON.stringify(data));
+                localStorage.setItem(signatureKey, currentSignature);
+            } else {
+                setSummaryData(null);
+            }
+
+        } catch (e) {
+            console.error("Failed to generate summary:", e);
+            setSummaryError("Couldn't generate your weekly summary. Please try again later.");
+        } finally {
+            setIsSummaryLoading(false);
+        }
+    }, [entries, userId, currentWeekId]);
+
+    useEffect(() => {
+        // Trigger summary generation when entries change (load)
+        generateSummary(false);
+    }, [generateSummary]);
+
+    const handleManualRefresh = () => generateSummary(true);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -471,8 +558,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
     return (
         <div className="flex flex-col h-screen bg-white dark:bg-black text-slate-800 dark:text-slate-200 transition-colors duration-300">
             <header className="flex-shrink-0 p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
-                <button onClick={onNavigateHome} className="flex items-center gap-2 rounded-full bg-black/20 dark:bg-white/10 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-300 backdrop-blur-sm transition-all hover:bg-slate-200 dark:hover:bg-white/20 hover:text-black dark:hover:text-white" aria-label="Go back to home page">
-                    <HomeIcon /> <span>Home</span>
+                <button onClick={onBack} className="flex items-center gap-2 rounded-full bg-black/20 dark:bg-white/10 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-300 backdrop-blur-sm transition-all hover:bg-slate-200 dark:hover:bg-white/20 hover:text-black dark:hover:text-white" aria-label="Go back">
+                    <ArrowLeftIcon /> <span>Back</span>
                 </button>
             </header>
 
@@ -501,6 +588,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ theme, onNavigateHome, on
                                     isLoading={isSummaryLoading}
                                     error={summaryError}
                                     onNavigateToJournal={() => onNavigateToJournal()}
+                                    onRefresh={handleManualRefresh}
+                                    hasEntries={entries.length > 0}
                                 />
                             </motion.div>
                         </div>

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useId } from 'react';
 // FIX: The framer-motion `Variants` type is not being exported correctly in this project's setup.
 // Removing it from the import to resolve the error.
@@ -26,7 +24,7 @@ const GoogleIcon = () => (
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAuthSuccess: () => void;
+  onAuthSuccess: (userData?: any) => void;
   onGuestLogin: () => void;
   initialMode?: 'prompt' | 'login' | 'signup';
   logoDataUri: string;
@@ -35,6 +33,7 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess, onGuestLogin, initialMode = 'prompt', logoDataUri }) => {
   const [mode, setMode] = useState(initialMode);
   const id = useId();
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
     // Reset to initial mode when modal is opened
@@ -58,7 +57,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAuthSuccess();
+    onAuthSuccess({ email });
   };
 
   const switchMode = () => {
@@ -171,7 +170,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess, o
                           )}
                           <div>
                               <label htmlFor={`${id}-email`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Email</label>
-                              <input id={`${id}-email`} placeholder="you@example.com" type="email" required className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-calm-orange-500"/>
+                              <input 
+                                id={`${id}-email`} 
+                                placeholder="you@example.com" 
+                                type="email" 
+                                required 
+                                className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-calm-orange-500"
+                                onChange={(e) => setEmail(e.target.value)}
+                              />
                           </div>
                           <div>
                               <label htmlFor={`${id}-password`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
@@ -190,7 +196,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess, o
 <GoogleLogin
   onSuccess={(credentialResponse) => {
     console.log('Google login success:', credentialResponse);
-    onAuthSuccess(); // You already handle post-login flow
+    onAuthSuccess(credentialResponse);
   }}
   onError={() => {
     console.log('Google login failed');

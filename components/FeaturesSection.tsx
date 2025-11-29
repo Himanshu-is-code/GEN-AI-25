@@ -1,20 +1,18 @@
-
-
 import React, { useState } from 'react';
 
 // Icons for the features
+const ChatIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-red-600 dark:text-red-300">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+);
+
 const DashboardIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-calm-blue-600 dark:text-calm-blue-300">
         <rect x="3" y="3" width="7" height="7"></rect>
         <rect x="14" y="3" width="7" height="7"></rect>
         <rect x="14" y="14" width="7" height="7"></rect>
         <rect x="3" y="14" width="7" height="7"></rect>
-    </svg>
-);
-
-const ShieldIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-red-600 dark:text-red-300">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
     </svg>
 );
 
@@ -44,20 +42,20 @@ interface Feature {
 
 const featuresData: Feature[] = [
     {
+        frontIcon: <ChatIcon />,
+        frontTitle: 'AI Chat Companion',
+        frontDescription: 'Talk through your thoughts and feelings in a safe, private space.',
+        backTitle: 'Always Here to Listen',
+        backItems: ["Confidential conversations", "Guided mindfulness exercises", "Available 24/7 for support", "Judgment-free listening"],
+        color: 'red'
+    },
+    {
         frontIcon: <DashboardIcon />,
         frontTitle: 'Wellness Dashboard',
         frontDescription: 'Get a bird\'s-eye view of your weekly progress and mood trends.',
         backTitle: 'Your Personal Insights',
         backItems: ["Track mood over time", "AI-powered weekly summary", "Monitor journaling consistency", "Quick access to all tools"],
         color: 'blue'
-    },
-    {
-        frontIcon: <ShieldIcon />,
-        frontTitle: 'Crisis Navigator',
-        frontDescription: 'Detects crisis language and provides immediate, confidential access to safety resources.',
-        backTitle: 'Prioritizing Your Safety',
-        backItems: ["Automatic crisis detection", "Immediate access to lifelines", "Confidential & secure", "Always-on safety net"],
-        color: 'red'
     },
     {
         frontIcon: <JournalIcon />,
@@ -200,15 +198,15 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                 </p>
             </div>
 
-            <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
+            <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
                 {featuresData.map((feature, index) => {
                     let exploreAction = () => {};
                     switch (feature.frontTitle) {
+                        case 'AI Chat Companion':
+                            exploreAction = onNavigateToChat;
+                            break;
                         case 'Wellness Dashboard':
                             exploreAction = onNavigateToDashboard;
-                            break;
-                        case 'Crisis Navigator':
-                            exploreAction = onNavigateToChat;
                             break;
                         case 'AI-Powered Journal':
                             exploreAction = onNavigateToJournal;

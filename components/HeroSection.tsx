@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import FlipText from './FlipText';
 import WrapButton from './WrapButton';
@@ -48,7 +49,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigateToChat }) => {
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
               <span className="gradient-text">Mindful Youth</span>
               <span className="text-slate-800 dark:text-slate-200"> - </span>
-              <FlipText className="text-slate-800 dark:text-slate-200">Your Wellness Companion</FlipText>
+              <FlipText className="text-slate-800 dark:text-slate-200">Wellness Companion</FlipText>
             </h1>
             <p className="mt-5 text-xl text-slate-600 dark:text-slate-300">
               A confidential, empathetic space designed to support and guide you through life's challenges, breaking down stigma and providing accessible help.

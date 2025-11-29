@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,11 +13,10 @@ const getWeekId = (d: Date) => {
     const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
     return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 };
-const getLocalStorageKey = (weekId: string) => `mindful-youth-journal-${weekId}`;
+const getLocalStorageKey = (weekId: string, userId: string) => `mindful-youth-journal-${userId}-${weekId}`;
 const MAX_ENTRIES = 8;
 
 // --- Icons ---
-const HomeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>);
 const DownloadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>);
 const PlusIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
 const TrashIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
@@ -96,12 +93,14 @@ const MoodCalendar: React.FC<{ entries: JournalEntry[] }> = ({ entries }) => {
 // --- Component Props ---
 interface JournalPageProps {
   theme: 'light' | 'dark';
-  onNavigateHome: () => void;
+  userId: string;
+  onBack: () => void;
+  onNavigateHome: () => void; // Keeping for clarity if needed, but primary navigation is back
   initialSelectedEntryId: string | null;
   clearInitialSelectedEntryId: () => void;
 }
 
-const JournalPage: React.FC<JournalPageProps> = ({ theme, onNavigateHome, initialSelectedEntryId, clearInitialSelectedEntryId }) => {
+const JournalPage: React.FC<JournalPageProps> = ({ theme, userId, onBack, initialSelectedEntryId, clearInitialSelectedEntryId }) => {
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [selectedEntryId, setSelectedEntryId] = useState<string | 'new' | null>(null);
     const [currentWeekId, setCurrentWeekId] = useState(getWeekId(new Date()));
@@ -111,7 +110,7 @@ const JournalPage: React.FC<JournalPageProps> = ({ theme, onNavigateHome, initia
     // --- Data Fetching and Persistence ---
     useEffect(() => {
         try {
-            const key = getLocalStorageKey(currentWeekId);
+            const key = getLocalStorageKey(currentWeekId, userId);
             const savedEntries = localStorage.getItem(key);
             if (savedEntries) {
                 setEntries(JSON.parse(savedEntries));
@@ -122,7 +121,7 @@ const JournalPage: React.FC<JournalPageProps> = ({ theme, onNavigateHome, initia
             console.error("Failed to load journal entries:", e);
             setError("Could not load your journal entries. Please try again later.");
         }
-    }, [currentWeekId]);
+    }, [currentWeekId, userId]);
     
     useEffect(() => {
         if (initialSelectedEntryId) {
@@ -134,14 +133,14 @@ const JournalPage: React.FC<JournalPageProps> = ({ theme, onNavigateHome, initia
 
     const saveEntries = useCallback((updatedEntries: JournalEntry[]) => {
         try {
-            const key = getLocalStorageKey(currentWeekId);
+            const key = getLocalStorageKey(currentWeekId, userId);
             localStorage.setItem(key, JSON.stringify(updatedEntries));
             setEntries(updatedEntries);
         } catch (e) {
             console.error("Failed to save journal entries:", e);
             setError("Could not save your journal entry. Your data may not be persisted.");
         }
-    }, [currentWeekId]);
+    }, [currentWeekId, userId]);
 
     // --- Gemini API ---
     const getAnalysis = useCallback(async (title: string, content: string): Promise<AIAnalysis> => {
@@ -319,8 +318,8 @@ const JournalPage: React.FC<JournalPageProps> = ({ theme, onNavigateHome, initia
         <div className="flex flex-col h-screen bg-white dark:bg-black text-slate-800 dark:text-slate-200 transition-colors duration-300">
             {/* Header */}
             <header className="flex-shrink-0 p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
-                <button onClick={onNavigateHome} className="flex items-center gap-2 rounded-full bg-black/20 dark:bg-white/10 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-300 backdrop-blur-sm transition-all hover:bg-slate-200 dark:hover:bg-white/20 hover:text-black dark:hover:text-white" aria-label="Go back to home page">
-                    <HomeIcon /> <span>Home</span>
+                <button onClick={onBack} className="flex items-center gap-2 rounded-full bg-black/20 dark:bg-white/10 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-300 backdrop-blur-sm transition-all hover:bg-slate-200 dark:hover:bg-white/20 hover:text-black dark:hover:text-white" aria-label="Go back">
+                    <ArrowLeftIcon /> <span>Back</span>
                 </button>
                 <button onClick={handleDownloadPdf} disabled={entries.length === 0} className="flex items-center gap-2 rounded-full bg-black/20 dark:bg-white/10 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-300 backdrop-blur-sm transition-all hover:bg-slate-200 dark:hover:bg-white/20 hover:text-black dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Download weekly report">
                     <DownloadIcon /> <span>Download Report</span>

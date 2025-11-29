@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, Chat, Type } from "@google/genai";
 import { AiInput } from './AiInput';
@@ -14,7 +11,7 @@ const getWeekId = (d: Date) => {
     const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
     return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 };
-const getLocalStorageKey = (weekId: string) => `mindful-youth-journal-${weekId}`;
+const getLocalStorageKey = (weekId: string, userId: string) => `mindful-youth-journal-${userId}-${weekId}`;
 const MAX_ENTRIES = 8;
 
 // An interface that includes the AI-generated title
@@ -93,14 +90,15 @@ interface Message {
 // Component Props
 interface ChatProps {
   theme: 'light' | 'dark';
-  onNavigateHome: () => void;
+  userId: string;
+  onBack: () => void;
   onNavigateToJournal: (entryId: string) => void;
 }
 
-const HomeIcon = () => (
+const ArrowLeftIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
     </svg>
 );
 
@@ -218,12 +216,15 @@ const JournalAnalysisCard: React.FC<{ analysis: AIAnalysis; title: string; onEdi
     );
 };
 
-const ChatPage: React.FC<ChatProps> = ({ theme, onNavigateHome, onNavigateToJournal }) => {
+const ChatPage: React.FC<ChatProps> = ({ theme, userId, onBack, onNavigateToJournal }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chat, setChat] = useState<Chat | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+
+  // Use a ref to track if we've initialized the chat for this userId to avoid re-init on every render
+  const initializedUserIdRef = useRef<string | null>(null);
 
   // Automatically scroll to the latest message
   useEffect(() => {
@@ -293,6 +294,15 @@ const ChatPage: React.FC<ChatProps> = ({ theme, onNavigateHome, onNavigateToJour
 
   // Initialize the Gemini Chat model
   useEffect(() => {
+    // Only initialize if userId has changed or we haven't initialized yet
+    if (initializedUserIdRef.current === userId) {
+        return;
+    }
+    
+    // Reset messages when switching users
+    setMessages([]);
+    initializedUserIdRef.current = userId;
+
     const initializeChat = async () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -390,7 +400,7 @@ For every user input, follow this structured loop internally:
     };
     
     initializeChat();
-  }, [handleApiError]);
+  }, [handleApiError, userId]);
   
   const saveAndAnalyzeJournalEntry = useCallback(async (content: string): Promise<JournalEntry> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -438,14 +448,14 @@ For every user input, follow this structured loop internally:
 
     // Save to local storage
     const weekId = getWeekId(new Date());
-    const key = getLocalStorageKey(weekId);
+    const key = getLocalStorageKey(weekId, userId);
     const savedEntries = localStorage.getItem(key);
     const existingEntries: JournalEntry[] = savedEntries ? JSON.parse(savedEntries) : [];
     const updatedEntries = [newEntry, ...existingEntries].slice(0, MAX_ENTRIES);
     localStorage.setItem(key, JSON.stringify(updatedEntries));
 
     return newEntry;
-}, []);
+}, [userId]);
 
   const handleAddJournalFromChat = useCallback(async (messageText: string, originalAiMessageIndex: number) => {
     if (isLoading) return;
@@ -655,15 +665,15 @@ For every user input, follow this structured loop internally:
     <div 
         className="flex flex-col h-screen bg-white dark:bg-black text-slate-800 dark:text-slate-200 transition-colors duration-300 relative"
     >
-      {/* Home Button */}
+      {/* Home/Back Button */}
       <div className="absolute top-4 left-4 z-20">
         <button
-          onClick={onNavigateHome}
+          onClick={onBack}
           className="flex items-center gap-2 rounded-full bg-black/20 dark:bg-white/10 px-4 py-2 text-sm font-medium text-slate-200 dark:text-slate-300 backdrop-blur-sm transition-all hover:bg-black/30 dark:hover:bg-white/20 hover:text-white"
-          aria-label="Go back to home page"
+          aria-label="Go back"
         >
-          <HomeIcon />
-          <span>Home</span>
+          <ArrowLeftIcon />
+          <span>Back</span>
         </button>
       </div>
 

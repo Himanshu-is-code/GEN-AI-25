@@ -1,11 +1,12 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 
 interface FinalCTAProps {
-    onStartJourney: () => void;
     onOpenJournal: () => void;
     onNavigateToWriter: () => void;
     onNavigateToDashboard: () => void;
+    onNavigateToChat: () => void;
 }
 
 const ArrowRightIcon = () => (
@@ -15,7 +16,7 @@ const ArrowRightIcon = () => (
     </svg>
 );
 
-const FinalCTA: React.FC<FinalCTAProps> = ({ onStartJourney, onOpenJournal, onNavigateToWriter, onNavigateToDashboard }) => {
+const FinalCTA: React.FC<FinalCTAProps> = ({ onOpenJournal, onNavigateToWriter, onNavigateToDashboard, onNavigateToChat }) => {
     return (
         // FIX: Framer Motion props are not being recognized by TypeScript due to a potential version issue. Using ts-ignore as a workaround.
         // @ts-ignore
@@ -46,19 +47,19 @@ const FinalCTA: React.FC<FinalCTAProps> = ({ onStartJourney, onOpenJournal, onNa
                         A safe space is just a click away. Start a confidential conversation, reflect in your journal, or find the right words for a tough talk.
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
                         <button 
-                            onClick={onNavigateToDashboard}
+                            onClick={onNavigateToChat}
                             className="group flex w-full items-center justify-between rounded-full bg-black px-5 py-3 text-white transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-calm-orange-500 focus:ring-white">
-                            <span className="font-medium">View Dashboard</span>
+                            <span className="font-medium">Talk to AI Companion</span>
                             <span className="h-6 w-6 flex-shrink-0 rounded-full bg-white text-black flex items-center justify-center transition-transform duration-300 group-hover:rotate-45">
                                 <ArrowRightIcon />
                             </span>
                         </button>
                         <button 
-                            onClick={onStartJourney}
+                            onClick={onNavigateToDashboard}
                             className="group flex w-full items-center justify-between rounded-full bg-black px-5 py-3 text-white transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-calm-orange-500 focus:ring-white">
-                            <span className="font-medium">Start Conversation</span>
+                            <span className="font-medium">View Dashboard</span>
                             <span className="h-6 w-6 flex-shrink-0 rounded-full bg-white text-black flex items-center justify-center transition-transform duration-300 group-hover:rotate-45">
                                 <ArrowRightIcon />
                             </span>
